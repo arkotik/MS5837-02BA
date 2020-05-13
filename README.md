@@ -50,30 +50,13 @@ Here the I2C adress of the sensor is 0x76. More information, or source, can be f
 
 ## I2C - Python 
 
-To read out the sensors with python, some python modules are needed. Run the command lines below;
+To read out the sensors with python, some python modules are needed. Install all requirements;
 
 ```
-sudo apt-get update
-sudo apt-get install python-smbus
-sudo apt-get install python-obspy
-```
-
-## Python scripts - simple one shot data
-
-The simple script includes a one-shot data request.
-
-## Python scripts - src folder
-
-The main file to read raw sensor data of the MS5837-02BA is the ```ms5837_main.py``` script. This script includes all fuctions/defenitions needed to comunicate with the sensor. ```ms5837.py``` calls the main script and loops with a specific sampling rate. 
-
-When starting ```ms5837.py```, one can ask for the help function (-h). This function shows the arguments one can give, with the script. Those arguments are:
-
-```
--t            - Time of recording
--fs           - Sample rate
--SamplRate    - Oversampling rate
+pip install -r requirements.txt
 ```
 
 ## Author
 
+**Arkotik** by materials from:
 **Olivier den Ouden** - *KNMI* - [HFSP SeabirdSound](https://seabirdsound.org)
