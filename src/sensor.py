@@ -22,25 +22,29 @@ MS5837_CONVERT_D2 = 0x50
 
 class PressureSensor(object):
     osr = OSR_8192
-    calibration_data = []
+    prom = []
 
     def __init__(self,  device=1, address=MS5837_ADDR, osr=OSR_8192, verbose=False):
         self.verbose = verbose
-        self.set_osr(osr)
+        self.bus = smbus.SMBus(device)
         self.dev = device
         self.addr = address
-        self.bus = smbus.SMBus(device)
-        self.calibrate()
+        self.set_osr(osr)
+        if not self.check_crc():
+            raise Exception('CRC-4 signature mismatch')
+        if self.verbose:
+            print('MS5837 initialized successfully')
 
     def set_osr(self, osr):
         if self.osr < OSR_256 or self.osr > OSR_8192:
             raise Exception('Invalid OSR value')
         if self.verbose:
-            print('Setting oversampling rate {}', 2 ** (8 + osr))
+            print('Setting oversampling rate {}'.format(2 ** (8 + osr)))
         self.osr = osr
+        self.read_prom()
         return self
 
-    def calibrate(self):
+    def read_prom(self):
         # Reset the device
         if self.verbose:
             print('Reset the device')
@@ -48,14 +52,12 @@ class PressureSensor(object):
         time.sleep(2)
         # Read calibration values
         if self.verbose:
-            print('Read calibration data')
-        self.calibration_data = np.zeros(7)
+            print('Read PROM data')
+        self.prom = [0 for i in range(7)]
         for i in range(7):
             val = self.bus.read_word_data(self.addr, MS5837_PROM_READ + 2 * i)
             val = ((val & 0xFF) << 8) | (val >> 8)
-            self.calibration_data[i] = val
-        if self.verbose:
-            print('Calibration done')
+            self.prom[i] = val
 
     def read_data(self, data_addr):
         self.bus.write_byte(self.addr, data_addr + 2 * self.osr)
@@ -64,7 +66,7 @@ class PressureSensor(object):
         return data[0] << 16 | data[1] << 8 | data[2]
 
     def read(self):
-        c_data = self.calibration_data
+        c_data = self.prom
         raw_press = self.read_data(MS5837_CONVERT_D1)
         raw_temp = self.read_data(MS5837_CONVERT_D2)
 
@@ -91,24 +93,25 @@ class PressureSensor(object):
 
         return result_temp, result_press
 
-    @staticmethod
-    def crc4(n_prom):
+    def check_crc(self):
+        if self.verbose:
+            print('Check CRC-4')
+        # duplicate PROM data
+        n_prom = [*self.prom]
         n_rem = 0
-
-        n_prom[0] = ((n_prom[0]) & 0x0FFF)
+        # get CRC
+        crc = (n_prom[0] & 0xF000) >> 12
+        n_prom[0] = n_prom[0] & 0x0FFF
         n_prom.append(0)
-
         for i in range(16):
             if i % 2 == 1:
                 n_rem ^= ((n_prom[i >> 1]) & 0x00FF)
             else:
                 n_rem ^= (n_prom[i >> 1] >> 8)
-
             for n_bit in range(8, 0, -1):
                 if n_rem & 0x8000:
                     n_rem = (n_rem << 1) ^ 0x3000
                 else:
                     n_rem = (n_rem << 1)
-
         n_rem = ((n_rem >> 12) & 0x000F)
-        return n_rem ^ 0x00
+        return (n_rem ^ 0x00) == crc

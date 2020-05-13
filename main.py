@@ -1,9 +1,8 @@
 import time
-
-from src.sensor import PressureSensor
+import src.sensor as ms5837
 
 if __name__ == '__main__':
-    sensor = PressureSensor(verbose=True)
+    sensor = ms5837.PressureSensor(verbose=True, osr=ms5837.OSR_2048)
 
     def print_data():
         temp_value, pres_value = sensor.read()
@@ -12,6 +11,6 @@ if __name__ == '__main__':
     try:
         while True:
             print_data()
-            time.sleep(0.5)
+            time.sleep(1)
     except KeyboardInterrupt:
         exit(0)

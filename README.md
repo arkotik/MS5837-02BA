@@ -52,8 +52,20 @@ Here the I2C adress of the sensor is 0x76. More information, or source, can be f
 
 To read out the sensors with python, some python modules are needed. Install all requirements;
 
-```
+```shell script
 pip install -r requirements.txt
+```
+
+## Usage
+
+```python
+import src.sensor as ms5837
+
+sensor = ms5837.PressureSensor()
+# or sensor = PressureSensor(device=1, address=0x76, osr=ms5837.OSR_8192)
+temp_value, pres_value = sensor.read()
+print("Temp: {:0.2f} C  P: {:0.2f} hPa ".format(temp_value, pres_value))
+print(sensor.check_crc())
 ```
 
 ## Author
